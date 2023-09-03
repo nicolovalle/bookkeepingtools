@@ -1,0 +1,4 @@
+Usage:
+```
+./rundiagnostics.py --help
+```
