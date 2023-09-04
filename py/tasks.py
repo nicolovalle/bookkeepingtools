@@ -31,6 +31,12 @@ def Toffset(ut):
 def IsCosmics(run):
     return run['runType']['name']=="COSMICS"
 
+def IsPhysics(run):
+    return run['runType']['name']=="PHYSICS"
+
+def GetColMap(red, green, blue):
+    return mpl.colors.LinearSegmentedColormap.from_list(str(red)+'-'+str(green)+'-'+str(blue),[(red/255,green/255,blue/255),(0,0,0)],N=2)
+
 #___________________________________________________________
 def TIMETABLE(data,SavePng):
 
@@ -38,12 +44,15 @@ def TIMETABLE(data,SavePng):
     global firstmidnight
     
     utc0 = data[0]['startTime']
-    print('AAAAAAA',utc0)
     firsttimestamp = datetime.fromtimestamp(utc0*utctosec)
     firstmidnight = firsttimestamp.replace(hour=0,minute=0,second=0)
     print(firstmidnight)
-    X=[]
-    Y=[]
+    X={}
+    Y={}
+    for runtype in ['cosmics','synthetics','physics']:
+        X[runtype]=[]
+        Y[runtype]=[]
+        
     BinEdges = []
     for run in data:
         ndet = run['nDetectors']
@@ -51,7 +60,6 @@ def TIMETABLE(data,SavePng):
             continue
         BinEdges.append(Toffset(run['startTime']))
         BinEdges.append(Toffset(run['endTime']))
-    print(BinEdges)
     for run in data:
         ndet = run['nDetectors']
         if (ndet < 2):
@@ -62,14 +70,21 @@ def TIMETABLE(data,SavePng):
         #print(list_det_id)
         start_bin = Toffset(run['startTime']+1)
         for idet in list_det_id:
-            X.append(start_bin)
-            Y.append(idet)
             if IsCosmics(run):
-                X.append(start_bin)
-                Y.append(idet)
-
+                X['cosmics'].append(start_bin)
+                Y['cosmics'].append(idet)
+            elif IsPhysics(run):
+                X['physics'].append(start_bin)
+                Y['physics'].append(idet)
+            else:
+                X['synthetics'].append(start_bin)
+                Y['synthetics'].append(idet)
+            
     fig, ax = plt.subplots(figsize=(20,4))
-    ax.hist2d(X,Y, bins=(BinEdges,[i for i in range(len(DETECTORS)+1)]), cmin=1)
+   
+    ax.hist2d(X['cosmics'],Y['cosmics'], bins=(BinEdges,[i for i in range(len(DETECTORS)+1)]), cmin=1, cmap=GetColMap(229,232,147) )
+    ax.hist2d(X['physics'],Y['physics'], bins=(BinEdges,[i for i in range(len(DETECTORS)+1)]), cmin=1, cmap=GetColMap(72,212,36) )
+    ax.hist2d(X['synthetics'],Y['synthetics'], bins=(BinEdges,[i for i in range(len(DETECTORS)+1)]), cmin=1, cmap=GetColMap(96,74,125))
     ax.set_yticks(np.arange(len(DETECTORS)+1),labels=DETECTORS+['',],va='bottom')
     ax.grid(axis='y')
 
