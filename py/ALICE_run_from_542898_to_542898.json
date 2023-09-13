@@ -1,0 +1,145 @@
+[
+  {
+    "id": 40229,
+    "runNumber": 542898,
+    "timeO2Start": 1694472888000,
+    "timeO2End": 1694473306000,
+    "timeTrgStart": 1694472941000,
+    "timeTrgEnd": 1694473309000,
+    "startTime": 1694472941000,
+    "endTime": 1694473309000,
+    "runDuration": 368000,
+    "environmentId": "2hcWKRgZL8q",
+    "updatedAt": 1694473339000,
+    "runType": {
+      "id": 16,
+      "name": "COSMICS",
+      "createdAt": 1664286515000,
+      "updatedAt": 1664286515000
+    },
+    "definition": "COMMISSIONING",
+    "calibrationStatus": null,
+    "runQuality": "none",
+    "nDetectors": 14,
+    "nFlps": 199,
+    "nEpns": 318,
+    "dd_flp": true,
+    "dcs": true,
+    "epn": true,
+    "epnTopology": "",
+    "nSubtimeframes": null,
+    "bytesReadOut": null,
+    "envId": "2hcWKRgZL8q",
+    "fillNumber": 9138,
+    "lhcBeamEnergy": 1.08,
+    "lhcBeamMode": "NO BEAM",
+    "lhcBetaStar": 0,
+    "aliceL3Current": 30.5802,
+    "aliceDipoleCurrent": 0.0569868,
+    "aliceL3Polarity": "POSITIVE",
+    "aliceDipolePolarity": "POSITIVE",
+    "odcTopologyFullName": "(hash, default, production/production.desc, synchronous-workflow-calib)",
+    "pdpConfigOption": "Repository hash",
+    "pdpTopologyDescriptionLibraryFile": "production/production.desc",
+    "tfbDdMode": "processing",
+    "lhcPeriod": "LHC23zv",
+    "triggerValue": "CTP",
+    "pdpWorkflowParameters": "QC,GPU,EVENT_DISPLAY,CALIB",
+    "pdpBeamType": "cosmic",
+    "readoutCfgUri": "",
+    "startOfDataTransfer": null,
+    "endOfDataTransfer": null,
+    "ctfFileCount": null,
+    "ctfFileSize": null,
+    "tfFileCount": null,
+    "tfFileSize": null,
+    "otherFileCount": null,
+    "otherFileSize": null,
+    "lhcFill": {
+      "fillNumber": 9138,
+      "stableBeamsStart": 1694427354000,
+      "stableBeamsEnd": 1694437794000,
+      "stableBeamsDuration": 10440,
+      "beamType": "PROTON - PROTON",
+      "fillingSchemeName": "Single_4b_3_0_1_highbeta",
+      "runs": []
+    },
+    "detectors": "CPV,EMC,FDD,FT0,FV0,HMP,ITS,MCH,MFT,MID,PHS,TOF,TPC,TRD",
+    "detectorsQualities": [
+      {
+        "id": 5,
+        "name": "CPV",
+        "quality": "good"
+      },
+      {
+        "id": 6,
+        "name": "EMC",
+        "quality": "good"
+      },
+      {
+        "id": 15,
+        "name": "FDD",
+        "quality": "good"
+      },
+      {
+        "id": 14,
+        "name": "FT0",
+        "quality": "good"
+      },
+      {
+        "id": 13,
+        "name": "FV0",
+        "quality": "good"
+      },
+      {
+        "id": 1,
+        "name": "HMP",
+        "quality": "good"
+      },
+      {
+        "id": 7,
+        "name": "ITS",
+        "quality": "good"
+      },
+      {
+        "id": 2,
+        "name": "MCH",
+        "quality": "good"
+      },
+      {
+        "id": 8,
+        "name": "MFT",
+        "quality": "good"
+      },
+      {
+        "id": 3,
+        "name": "MID",
+        "quality": "good"
+      },
+      {
+        "id": 12,
+        "name": "PHS",
+        "quality": "good"
+      },
+      {
+        "id": 9,
+        "name": "TOF",
+        "quality": "good"
+      },
+      {
+        "id": 4,
+        "name": "TPC",
+        "quality": "good"
+      },
+      {
+        "id": 10,
+        "name": "TRD",
+        "quality": "good"
+      }
+    ],
+    "tags": [],
+    "eorReasons": [],
+    "logs": [],
+    "flpRoles": []
+  }
+]

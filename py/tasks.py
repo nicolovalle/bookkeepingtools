@@ -28,14 +28,22 @@ def Toffset(ut):
 
 
 #______
-def IsCosmics(run):
-    return run['runType']['name']=="COSMICS"
 
-def IsPhysics(run):
-    return run['runType']['name']=="PHYSICS"
+
+def IsRunType(run,runtype):
+    if runtype == "COSMICS" or runtype == "PHYSICS":
+        return run['runType']['name'] == runtype
+    elif runtype == "CALIBRATION":
+        return run['definition'] == runtype
+    elif runtype == "SYNTHETICS":
+        return not (IsRunType(run,"COSMICS") or IsRunType(run,"CALIBRATION") or IsRunType(run,"PHYSICS"))
+    return True
 
 def GetColMap(red, green, blue):
     return mpl.colors.LinearSegmentedColormap.from_list(str(red)+'-'+str(green)+'-'+str(blue),[(red/255,green/255,blue/255),(0,0,0)],N=2)
+
+ColMaps = {'COSMICS': GetColMap(229,232,147), 'PHYSICS': GetColMap(72,212,36), 'SYNTHETICS': GetColMap(96,74,125), 'CALIBRATION': GetColMap(160,0,0)}
+
 
 #___________________________________________________________
 def TIMETABLE(data,SavePng):
@@ -49,42 +57,42 @@ def TIMETABLE(data,SavePng):
     print(firstmidnight)
     X={}
     Y={}
-    for runtype in ['cosmics','synthetics','physics']:
+    for runtype in ['COSMICS','SYNTHETICS','PHYSICS','CALIBRATION']:
         X[runtype]=[]
         Y[runtype]=[]
         
     BinEdges = []
     for run in data:
         ndet = run['nDetectors']
-        if (ndet < 2):
-            continue
+        print(run['runNumber'],',',ndet,'detectors')
+        #if (ndet < 2):
+        #    continue
         BinEdges.append(Toffset(run['startTime']))
         BinEdges.append(Toffset(run['endTime']))
+    BinEdges.sort()
     for run in data:
         ndet = run['nDetectors']
-        if (ndet < 2):
-            continue
+        #if (ndet < 1):
+        #    continue
         list_det = run['detectors'].split(',')
         list_det_id = [DETECTORS.index(idet) for idet in list_det]
         #print('RUN')
-        #print(list_det_id)
-        start_bin = Toffset(run['startTime']+1)
-        for idet in list_det_id:
-            if IsCosmics(run):
-                X['cosmics'].append(start_bin)
-                Y['cosmics'].append(idet)
-            elif IsPhysics(run):
-                X['physics'].append(start_bin)
-                Y['physics'].append(idet)
-            else:
-                X['synthetics'].append(start_bin)
-                Y['synthetics'].append(idet)
+        print(list_det_id)
+        start_time = Toffset(run['startTime'])
+        end_time = Toffset(run['endTime'])
+        for ibin in [ib+0.001/3600 for ib in BinEdges if start_time <= ib < end_time]:
+            for idet in list_det_id:
+                for rtype in X:
+                    if IsRunType(run,rtype):
+                        print(rtype)
+                        X[rtype].append(ibin)
+                        Y[rtype].append(idet)
+               
             
     fig, ax = plt.subplots(figsize=(20,4))
-   
-    ax.hist2d(X['cosmics'],Y['cosmics'], bins=(BinEdges,[i for i in range(len(DETECTORS)+1)]), cmin=1, cmap=GetColMap(229,232,147) )
-    ax.hist2d(X['physics'],Y['physics'], bins=(BinEdges,[i for i in range(len(DETECTORS)+1)]), cmin=1, cmap=GetColMap(72,212,36) )
-    ax.hist2d(X['synthetics'],Y['synthetics'], bins=(BinEdges,[i for i in range(len(DETECTORS)+1)]), cmin=1, cmap=GetColMap(96,74,125))
+
+    for rtype in X:
+        ax.hist2d(X[rtype],Y[rtype], bins=(BinEdges,[i for i in range(len(DETECTORS)+1)]), cmin=1, cmap=ColMaps[rtype] )
     ax.set_yticks(np.arange(len(DETECTORS)+1),labels=DETECTORS+['',],va='bottom')
     ax.grid(axis='y')
 
