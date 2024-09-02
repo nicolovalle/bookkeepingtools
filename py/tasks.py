@@ -53,6 +53,8 @@ def TIMETABLE(data,SavePng):
 
     global firsttimestamp
     global firstmidnight
+
+    binWidthTolerance = 0.002/3600
     
     utc0 = data[0]['startTime']
     firsttimestamp = datetime.fromtimestamp(utc0*utctosec)
@@ -64,18 +66,25 @@ def TIMETABLE(data,SavePng):
         X[runtype]=[]
         Y[runtype]=[]
         
-    BinEdges = []
+    BinEdges_ = []
     for run in data:
         ndet = run['nDetectors']
         print(run['runNumber'],',',ndet,'detectors')
         #if (ndet < 2):
         #    continue
+        BinEdges_.append(Toffset(run['startTime']))
+        BinEdges_.append(Toffset(run['endTime']))
         if isinstance(run['lhcFill']['stableBeamsStart'],int) and isinstance(run['lhcFill']['stableBeamsStart'],int):
-            BinEdges.append(Toffset(run['lhcFill']['stableBeamsStart']))
-            BinEdges.append(Toffset(run['lhcFill']['stableBeamsEnd']))
-        BinEdges.append(Toffset(run['startTime']))
-        BinEdges.append(Toffset(run['endTime']))
-    BinEdges.sort()
+            BinEdges_.append(Toffset(run['lhcFill']['stableBeamsStart']))
+            BinEdges_.append(Toffset(run['lhcFill']['stableBeamsEnd']))
+    BinEdges_.sort()
+    BinEdges = [BinEdges_[0],]
+
+    for i in range(1, len(BinEdges_)):
+        if BinEdges_[i] - BinEdges[-1] >= binWidthTolerance:
+            BinEdges.append(BinEdges_[i])
+
+            
     for run in data:
         ndet = run['nDetectors']
         #if (ndet < 1):
@@ -88,7 +97,7 @@ def TIMETABLE(data,SavePng):
         print(list_det_id)
         start_time = Toffset(run['startTime'])
         end_time = Toffset(run['endTime'])
-        for ibin in [ib+0.001/3600 for ib in BinEdges if start_time <= ib < end_time]:
+        for ibin in [ib+binWidthTolerance/2 for ib in BinEdges if start_time <= ib < end_time]:
             for idet in list_det_id:
                 for rtype in X:
                     if IsRunType(run,rtype):
@@ -96,7 +105,7 @@ def TIMETABLE(data,SavePng):
                         X[rtype].append(ibin)
                         Y[rtype].append(idet)
         if isinstance(run['lhcFill']['stableBeamsStart'],int) and isinstance(run['lhcFill']['stableBeamsStart'],int):
-            for ibin in [ib+0.001/3600 for ib in BinEdges if Toffset(run['lhcFill']['stableBeamsStart']) <= ib < Toffset(run['lhcFill']['stableBeamsEnd'])]:
+            for ibin in [ib+binWidthTolerance/2 for ib in BinEdges if Toffset(run['lhcFill']['stableBeamsStart']) <= ib < Toffset(run['lhcFill']['stableBeamsEnd'])]:
                 if ibin not in X['SB']:
                     X['SB'].append(ibin)
                     Y['SB'].append(DETECTORS.index('STABLE BEAMS'))
