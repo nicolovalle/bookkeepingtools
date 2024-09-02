@@ -8,6 +8,7 @@ import re
 import datetime
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from matplotlib import gridspec
 from datetime import datetime
 from datetime import date
@@ -16,7 +17,7 @@ import seaborn as sns
 
 utctosec = 1./(1000)
 utctoh = 1./(1000*60*60)
-DETECTORS = ["CPV", "EMC", "FDD", "FT0", "FV0", "HMP", "ITS", "MCH", "MFT", "MID", "PHS", "TOF", "TPC", "TRD", "ZDC"]
+DETECTORS = ["STABLE BEAMS","CPV", "EMC", "FDD", "FT0", "FV0", "HMP", "ITS", "MCH", "MFT", "MID", "PHS", "TOF", "TPC", "TRD", "ZDC"]
 #DETECTORS.reverse()
 
 firsttimestamp = datetime.now()
@@ -31,6 +32,8 @@ def Toffset(ut):
 
 
 def IsRunType(run,runtype):
+    if runtype == 'SB':
+        return False
     if runtype == "COSMICS" or runtype == "PHYSICS":
         return run['runType']['name'] == runtype
     elif runtype == "CALIBRATION":
@@ -42,7 +45,7 @@ def IsRunType(run,runtype):
 def GetColMap(red, green, blue):
     return mpl.colors.LinearSegmentedColormap.from_list(str(red)+'-'+str(green)+'-'+str(blue),[(red/255,green/255,blue/255),(0,0,0)],N=2)
 
-ColMaps = {'COSMICS': GetColMap(229,232,147), 'PHYSICS': GetColMap(72,212,36), 'SYNTHETICS': GetColMap(96,74,125), 'CALIBRATION': GetColMap(160,0,0)}
+ColMaps = {'PHYSICS': GetColMap(72,212,36), 'COSMICS': GetColMap(229,232,147), 'SYNTHETICS': GetColMap(96,74,125), 'CALIBRATION': GetColMap(160,0,0), 'SB': GetColMap(255,0,0)} 
 
 
 #___________________________________________________________
@@ -57,7 +60,7 @@ def TIMETABLE(data,SavePng):
     print(firstmidnight)
     X={}
     Y={}
-    for runtype in ['COSMICS','SYNTHETICS','PHYSICS','CALIBRATION']:
+    for runtype in ['COSMICS','SYNTHETICS','PHYSICS','CALIBRATION','SB']:
         X[runtype]=[]
         Y[runtype]=[]
         
@@ -67,6 +70,9 @@ def TIMETABLE(data,SavePng):
         print(run['runNumber'],',',ndet,'detectors')
         #if (ndet < 2):
         #    continue
+        if isinstance(run['lhcFill']['stableBeamsStart'],int) and isinstance(run['lhcFill']['stableBeamsStart'],int):
+            BinEdges.append(Toffset(run['lhcFill']['stableBeamsStart']))
+            BinEdges.append(Toffset(run['lhcFill']['stableBeamsEnd']))
         BinEdges.append(Toffset(run['startTime']))
         BinEdges.append(Toffset(run['endTime']))
     BinEdges.sort()
@@ -74,6 +80,8 @@ def TIMETABLE(data,SavePng):
         ndet = run['nDetectors']
         #if (ndet < 1):
         #    continue
+        if 'TST' in run['detectors']:
+            continue
         list_det = run['detectors'].split(',')
         list_det_id = [DETECTORS.index(idet) for idet in list_det]
         #print('RUN')
@@ -84,22 +92,41 @@ def TIMETABLE(data,SavePng):
             for idet in list_det_id:
                 for rtype in X:
                     if IsRunType(run,rtype):
-                        print(rtype)
+                        #print(rtype)
                         X[rtype].append(ibin)
                         Y[rtype].append(idet)
-               
+        if isinstance(run['lhcFill']['stableBeamsStart'],int) and isinstance(run['lhcFill']['stableBeamsStart'],int):
+            for ibin in [ib+0.001/3600 for ib in BinEdges if Toffset(run['lhcFill']['stableBeamsStart']) <= ib < Toffset(run['lhcFill']['stableBeamsEnd'])]:
+                if ibin not in X['SB']:
+                    X['SB'].append(ibin)
+                    Y['SB'].append(DETECTORS.index('STABLE BEAMS'))
+                
             
+
+    print('')
+    print(X)
+    print('')
+    print(Y)
     fig, ax = plt.subplots(figsize=(20,4))
 
     for rtype in X:
+        print('AAA rtype',rtype)
         ax.hist2d(X[rtype],Y[rtype], bins=(BinEdges,[i for i in range(len(DETECTORS)+1)]), cmin=1, cmap=ColMaps[rtype] )
     ax.set_yticks(np.arange(len(DETECTORS)+1),labels=DETECTORS+['',],va='bottom')
     ax.grid(axis='y')
 
+    legend_patches = []
+    for rtype, cmap_name in ColMaps.items():
+        patch_color = cmap_name(0)
+        patch = mpatches.Patch(color=patch_color, label=rtype)
+        legend_patches.append(patch)
+
     vlines = [24*i for i in range(9999) if 24*i <= BinEdges[-1]]
     for l in vlines:
         ax.axvline(l,linewidth=1,linestyle='-.', color='#7faceb')
-        
+
+    ax.legend(handles=legend_patches, loc='center left', bbox_to_anchor=(1, 0.5), title='Run type')
+    
     ax.set_xlabel('time (h)')
     ax.xaxis.set_label_coords(1, -.05)
         
