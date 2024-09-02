@@ -4,12 +4,13 @@
 
 rundiagnostics.py
 
-Usage: ./rundiagnostics.py -f <firstrun> -l <lastrun> [--duration <min_duration>] [--run <option>] [--save]
+Usage: ./rundiagnostics.py -f <firstrun> -l <lastrun> -t <token_file> [--duration <min_duration>] [--run <option>] [--save]
 
 Options:
     -h --help                  Display this help
     -f <firstrun>              First run number
     -l <lastrun>               Last run number 
+    -t <token_file>            Path to file with your bookkeeping token
     --duration <min_duration>  Min duration in minutes [default: -1]
     --run <option>             Option [default: timetable]
     --save                     Save figure as png [default: False]
@@ -17,6 +18,9 @@ Options:
 * run options: timetable, eor, mdquality
 * --duration used only for mdquality mode
 """
+
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 import requests
@@ -32,6 +36,7 @@ import tasks as task
 argv = docopt.docopt(__doc__,version="1.0")
 FromRun = int(argv['-f'])
 ToRun = int(argv['-l'])
+tokenfile = str(argv['-t'])
 SavePng = bool(argv['--save'])
 RunOption = str(argv['--run'])
 MinDuration = float(argv['--duration'])
@@ -41,12 +46,15 @@ MinDuration = float(argv['--duration'])
         
 #______________________________________________________________
 if __name__ == "__main__":
-    fillNumbers_int = [int(n) for n in range(FromRun, ToRun+1)]
-    fillNumbers_str = [str(n) for n in range(FromRun, ToRun+1)]
-    fillNumbers_str_comma = ','.join(fillNumbers_str)
-    print('ANALYZING RUNS',fillNumbers_str_comma);
-    req = requests.get('https://ali-bookkeeping.cern.ch/api/runs?filter[runNumbers]={0}&page[offset]=0&page[limit]=999'.format(fillNumbers_str_comma),verify=False)
+    runNumbers_int = [int(n) for n in range(FromRun, ToRun+1)]
+    runNumbers_str = [str(n) for n in range(FromRun, ToRun+1)]
+    runNumbers_str_comma = ','.join(runNumbers_str)
+    print('ANALYZING RUNS',runNumbers_str_comma);
+    with open(tokenfile,'r') as f:
+        tok = f.readline().strip()
+    req = requests.get('https://ali-bookkeeping.cern.ch/api/runs?filter[runNumbers]={0}&page[offset]=0&page[limit]=999&token={1}'.format(runNumbers_str_comma,tok),verify=False)
     #req = requests.get('https://ali-bookkeeping.cern.ch/api/runs',verify=False)
+    print(req)
     data = json.loads(req.text)['data']
     data.reverse()
     filename = 'ALICE_run_from_{0}_to_{1}.json'.format(FromRun, ToRun);

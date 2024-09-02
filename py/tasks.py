@@ -113,7 +113,8 @@ def TIMETABLE(data,SavePng):
 #______________________________________________________
 def MDQUALITYTABLE(data,minduration):
 
-    qualitydict = {}  # qualitydict[run]=[good, bad, good ,,..., duration, fillnumber] 
+    qualitydict = {}  # qualitydict[run]=[good, bad, good ,,..., duration, fillnumber]
+    noPhysicsRuns = []
     for run in data:
         runN = run['runNumber']
         ndet = run['nDetectors']
@@ -122,9 +123,17 @@ def MDQUALITYTABLE(data,minduration):
         duration = round((int(run['runDuration'])/(1000*60)),1)
         if duration < minduration:
             continue
+        try:
+            if run['runType']['name'] in ['COSMICS','SYNTHETIC']:
+                noPhysicsRuns.append(runN)
+                continue
+        except Exception as e:
+            print('Exception in reading run type for run',runN,e)
+            print('Exiting')
+            sys.exit()
         qualitydict[runN] = list()
-        qualities_det = [jj['name'] for jj in run['detectorsQualities']]
-        qualities_qual = [jj['quality'] for jj in run['detectorsQualities']]
+        qualities_det = [r['name'] for r in run['detectorsQualities']]
+        qualities_qual = [r['quality'] for r in run['detectorsQualities']]
         detectors = run['detectors'].split(',')
         for det in DETECTORS:
             if det in detectors and det in qualities_det:
@@ -155,6 +164,7 @@ def MDQUALITYTABLE(data,minduration):
         for j in qualitydict[run]:
             row += ' '+str(j).ljust(6)+' |'
         print(row)
+    print('\n\nThe followig runs are COSMICS or SYNTHETICs:',noPhysicsRuns)
         
 #______________________________________________________
 def EOR(data,SavePng):
