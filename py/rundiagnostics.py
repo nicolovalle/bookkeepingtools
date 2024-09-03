@@ -29,6 +29,7 @@ import docopt
 import re
 import datetime
 import tasks as task
+import sys
 
 
 
@@ -42,7 +43,13 @@ RunOption = str(argv['--run'])
 MinDuration = float(argv['--duration'])
 
    
-        
+def isReadable(run):
+    checks = ['nDetectors','runType']
+    for c in checks:
+        if run[c] is None:
+            return False
+    return True
+    
         
 #______________________________________________________________
 if __name__ == "__main__":
@@ -57,11 +64,14 @@ if __name__ == "__main__":
     print(req)
     data = json.loads(req.text)['data']
     data.reverse()
+    print('Downloaded',len(data),'runs')
+    data = [r for r in data if isReadable(r)]
+    print('Readable runs:',len(data))
     filename = 'ALICE_run_from_{0}_to_{1}.json'.format(FromRun, ToRun);
+    
     with open (filename, 'w') as f:
         json.dump(data, f, indent=2)
 
-    print('DOWNLOADED:',len(data),'RUNS')
     if RunOption == 'timetable':
         task.TIMETABLE(data,SavePng)
     if RunOption == 'eor':

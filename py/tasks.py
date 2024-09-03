@@ -23,6 +23,8 @@ DETECTORS = ["STABLE BEAMS","CPV", "EMC", "FDD", "FT0", "FV0", "HMP", "ITS", "MC
 firsttimestamp = datetime.now()
 firstmidnight = datetime.now()
 
+foundUnknownRunType = False
+
 
 def Toffset(ut):
     return (datetime.fromtimestamp(ut*utctosec) - firstmidnight).total_seconds()/3600
@@ -32,20 +34,25 @@ def Toffset(ut):
 
 
 def IsRunType(run,runtype):
+    global foundUnknownRunType
     if runtype == 'SB':
         return False
-    if runtype == "COSMICS" or runtype == "PHYSICS":
+    if runtype == "COSMICS" or runtype == "PHYSICS" or runtype == "TECHNICAL" or runtype == "SYNTHETIC":
         return run['runType']['name'] == runtype
     elif runtype == "CALIBRATION":
         return run['definition'] == runtype
-    elif runtype == "SYNTHETICS":
-        return not (IsRunType(run,"COSMICS") or IsRunType(run,"CALIBRATION") or IsRunType(run,"PHYSICS"))
+    elif runtype == "unknown": 
+        IsUnknown = not (IsRunType(run,"COSMICS") or IsRunType(run,"CALIBRATION") or IsRunType(run,"PHYSICS") or IsRunType(run,"TECHNICAL") or IsRunType(run,"SYNTHETICS"))
+        if IsUnknown:
+            foundUnknownRunType = True
+            print('UNKNOWN RUN TYPE FOR RUN',run['runNumber'])
+        return IsUnknown
     return True
 
 def GetColMap(red, green, blue):
     return mpl.colors.LinearSegmentedColormap.from_list(str(red)+'-'+str(green)+'-'+str(blue),[(red/255,green/255,blue/255),(0,0,0)],N=2)
 
-ColMaps = {'PHYSICS': GetColMap(72,212,36), 'COSMICS': GetColMap(229,232,147), 'SYNTHETICS': GetColMap(96,74,125), 'CALIBRATION': GetColMap(160,0,0), 'SB': GetColMap(255,0,0)} 
+ColMaps = {'PHYSICS': GetColMap(72,212,36), 'COSMICS': GetColMap(229,232,147), 'SYNTHETIC': GetColMap(96,74,125), 'TECHNICAL': GetColMap(190,190,190), 'CALIBRATION': GetColMap(160,0,0), 'unknown': GetColMap(0,0,0), 'SB': GetColMap(255,0,0)} 
 
 
 #___________________________________________________________
@@ -53,6 +60,7 @@ def TIMETABLE(data,SavePng):
 
     global firsttimestamp
     global firstmidnight
+    global foundUnknownRunType
 
     binWidthTolerance = 0.002/3600
     
@@ -62,11 +70,12 @@ def TIMETABLE(data,SavePng):
     print(firstmidnight)
     X={}
     Y={}
-    for runtype in ['COSMICS','SYNTHETICS','PHYSICS','CALIBRATION','SB']:
+    for runtype in ['COSMICS','SYNTHETIC','TECHNICAL','PHYSICS','CALIBRATION','unknown','SB']:
         X[runtype]=[]
         Y[runtype]=[]
         
     BinEdges_ = []
+    minRunStart = 9999999
     for run in data:
         ndet = run['nDetectors']
         print(run['runNumber'],',',ndet,'detectors')
@@ -74,10 +83,17 @@ def TIMETABLE(data,SavePng):
         #    continue
         BinEdges_.append(Toffset(run['startTime']))
         BinEdges_.append(Toffset(run['endTime']))
-        if isinstance(run['lhcFill']['stableBeamsStart'],int) and isinstance(run['lhcFill']['stableBeamsStart'],int):
-            BinEdges_.append(Toffset(run['lhcFill']['stableBeamsStart']))
-            BinEdges_.append(Toffset(run['lhcFill']['stableBeamsEnd']))
+        minRunStart = min(minRunStart, Toffset(run['startTime']))
+        sbfound = True
+        try:
+            if isinstance(run['lhcFill']['stableBeamsStart'],int) and isinstance(run['lhcFill']['stableBeamsStart'],int):
+                BinEdges_.append(Toffset(run['lhcFill']['stableBeamsStart']))
+                BinEdges_.append(Toffset(run['lhcFill']['stableBeamsEnd']))
+        except:
+            sbfound = False
     BinEdges_.sort()
+    BinEdges_ = [e for e in BinEdges_ if e >= minRunStart] 
+    
     BinEdges = [BinEdges_[0],]
 
     for i in range(1, len(BinEdges_)):
@@ -92,9 +108,11 @@ def TIMETABLE(data,SavePng):
         if 'TST' in run['detectors']:
             continue
         list_det = run['detectors'].split(',')
+        if '' in list_det:
+            continue
         list_det_id = [DETECTORS.index(idet) for idet in list_det]
         #print('RUN')
-        print(list_det_id)
+        #print(list_det_id)
         start_time = Toffset(run['startTime'])
         end_time = Toffset(run['endTime'])
         for ibin in [ib+binWidthTolerance/2 for ib in BinEdges if start_time <= ib < end_time]:
@@ -104,28 +122,27 @@ def TIMETABLE(data,SavePng):
                         #print(rtype)
                         X[rtype].append(ibin)
                         Y[rtype].append(idet)
-        if isinstance(run['lhcFill']['stableBeamsStart'],int) and isinstance(run['lhcFill']['stableBeamsStart'],int):
-            for ibin in [ib+binWidthTolerance/2 for ib in BinEdges if Toffset(run['lhcFill']['stableBeamsStart']) <= ib < Toffset(run['lhcFill']['stableBeamsEnd'])]:
-                if ibin not in X['SB']:
-                    X['SB'].append(ibin)
-                    Y['SB'].append(DETECTORS.index('STABLE BEAMS'))
+        try:
+            if isinstance(run['lhcFill']['stableBeamsStart'],int) and isinstance(run['lhcFill']['stableBeamsStart'],int):
+                for ibin in [ib+binWidthTolerance/2 for ib in BinEdges if Toffset(run['lhcFill']['stableBeamsStart']) <= ib < Toffset(run['lhcFill']['stableBeamsEnd'])]:
+                    if ibin not in X['SB']:
+                        X['SB'].append(ibin)
+                        Y['SB'].append(DETECTORS.index('STABLE BEAMS'))
+        except:
+            nodnwew =8
                 
             
-
-    print('')
-    print(X)
-    print('')
-    print(Y)
     fig, ax = plt.subplots(figsize=(20,4))
 
     for rtype in X:
-        print('AAA rtype',rtype)
         ax.hist2d(X[rtype],Y[rtype], bins=(BinEdges,[i for i in range(len(DETECTORS)+1)]), cmin=1, cmap=ColMaps[rtype] )
     ax.set_yticks(np.arange(len(DETECTORS)+1),labels=DETECTORS+['',],va='bottom')
     ax.grid(axis='y')
 
     legend_patches = []
     for rtype, cmap_name in ColMaps.items():
+        if (rtype == 'unknown' and not foundUnknownRunType) or rtype == 'SB':
+            continue
         patch_color = cmap_name(0)
         patch = mpatches.Patch(color=patch_color, label=rtype)
         legend_patches.append(patch)
