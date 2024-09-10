@@ -42,7 +42,7 @@ def IsRunType(run,runtype):
     elif runtype == "CALIBRATION":
         return run['definition'] == runtype
     elif runtype == "unknown": 
-        IsUnknown = not (IsRunType(run,"COSMICS") or IsRunType(run,"CALIBRATION") or IsRunType(run,"PHYSICS") or IsRunType(run,"TECHNICAL") or IsRunType(run,"SYNTHETICS"))
+        IsUnknown = not (IsRunType(run,"COSMICS") or IsRunType(run,"CALIBRATION") or IsRunType(run,"PHYSICS") or IsRunType(run,"TECHNICAL") or IsRunType(run,"SYNTHETIC"))
         if IsUnknown:
             foundUnknownRunType = True
             print('UNKNOWN RUN TYPE FOR RUN',run['runNumber'])
@@ -166,6 +166,8 @@ def TIMETABLE(data,SavePng):
 #______________________________________________________
 def MDQUALITYTABLE(data,minduration):
 
+    global DETECTORS
+    DETECTORS.remove('STABLE BEAMS')
     qualitydict = {}  # qualitydict[run]=[good, bad, good ,,..., duration, fillnumber]
     noPhysicsRuns = []
     for run in data:
@@ -217,6 +219,7 @@ def MDQUALITYTABLE(data,minduration):
         for j in qualitydict[run]:
             row += ' '+str(j).ljust(6)+' |'
         print(row)
+    print('\n\nRuns in the table:',[r for r in qualitydict])
     print('\n\nThe followig runs are COSMICS or SYNTHETICs:',noPhysicsRuns)
         
 #______________________________________________________
@@ -232,7 +235,10 @@ def EOR(data,SavePng):
             eor = run['eorReasons'][0]['category']
         except IndexError:
             eor = 'None'
-        if IsCosmics(run):
+        if IsRunType(run,"TECHNICAL") or IsRunType(run,"SYNTHETIC"):
+            continue
+        
+        if IsRunType(run,"COSMICS"):
             if eor in cosmicsdict:
                 try:
                     cosmicsdict[eor].append([run['runNumber'], run['eorReasons'][0]['title'], run['eorReasons'][0]['description']])
@@ -261,11 +267,10 @@ def EOR(data,SavePng):
         print(eor,':',len(cosmicsdict[eor]))
         if eor != 'Run Coordination':
             print('       ',cosmicsdict[eor])
-    print(' --- SYNTHETICS --- ')
+    print(' --- NON COSMICS --- ')
     for eor in syntheticdict:
         print(eor,':',len(syntheticdict[eor]))
-        if eor != 'Run Coordination':
-            print('       ',syntheticdict[eor])
+        print('       ',syntheticdict[eor])
 
     #DICT = cosmicsdict
     DICT = syntheticdict
